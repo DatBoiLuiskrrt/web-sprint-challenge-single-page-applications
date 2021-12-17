@@ -1,60 +1,117 @@
-import React, { useEffect, useState } from "react";
-import { Link, Route } from "react-router-dom";
-import data from "./data/data";
-import Home from "./components/Home";
+import React, { useState, useEffect } from "react";
+import { Route, Link } from "react-router-dom";
 import axios from "axios";
+import * as yup from "yup";
 import PizzaForm from "./components/PizzaForm";
-import Pizza from "./components/Pizza";
-
-const initialFormValues = {
+import pizzaSchema from "./components/PizzaSchema";
+import Orders from "./components/Orders";
+import Img from "./img/Pizza.jpg";
+const initialForm = {
+  "name-input": "",
+  "size-dropdown": null,
+  pepperoni: false,
+  sausage: false,
+  onions: false,
+  greenPeppers: false,
+  "special-text": "",
+};
+const initialErrors = {
   name: "",
   size: "",
-  topping1: false,
-  topping2: false,
-  special: "",
 };
+const initialOrders = [];
+const initialDisable = true;
+{
+  /* <img src="/"/> */
+}
+const App = () => {
+  const [formValues, setFormValues] = useState(initialForm);
+  const [orders, setOrders] = useState(initialOrders);
+  const [disabled, setDisabled] = useState(initialDisable);
+  const [formErrors, setFormErrors] = useState(initialErrors);
 
-export default function App() {
-  const [pizza, setPizza] = useState([]);
-  const [formValues, setFormValues] = useState(initialFormValues);
-  const [error, setError] = useState("");
-
-  const updateForm = (inputName, inputValue) => {
-    setFormValues({ ...formValues, [inputName]: inputValue });
+  const postOrder = (newOrder) => {
+    axios
+      .post("https://reqres.in/api/orders", newOrder)
+      .then((resp) => {
+        setOrders([resp.data, ...orders]);
+      })
+      .catch((err) => console.log(err))
+      .finally(() => {
+        // setFormValues(initialForm);
+      });
   };
-  const submitForm = () => {
-    const newPizza = {
-      name: formValues.name.trim(),
-      size: formValues.size,
-      topping1: formValues.topping1,
-      topping2: formValues.topping2,
+
+  const validate = (name, value) => {
+    yup
+      .reach(pizzaSchema, name)
+      .validate(value)
+      .then(() => setFormErrors({ ...formErrors, [name]: "" }))
+      .catch((err) => setFormErrors({ ...formErrors, [name]: err.errors[0] }));
+  };
+
+  const inputChange = (name, value) => {
+    validate(name, value);
+    setFormValues({
+      ...formValues,
+      [name]: value,
+    });
+  };
+
+  const formSubmit = () => {
+    const newOrder = {
+      "name-input": formValues["name-input"].trim(),
+      "size-dropdown": formValues["size-dropdown"],
+      "special-text": formValues["special-text"],
+      toppings: ["pepperoni", "sausage", "onions", "greenPeppers"].filter(
+        (topping) => !!formValues[topping]
+      ),
     };
-    function fetchPizza() {
-      return Promise.resolve({ success: true, data });
-    }
-    if (!newPizza.name || !newPizza.size) {
-      setError("All fields are required");
-    } else {
-      const data = res.data;
-      fetchPizza()
-        .then((res) => {
-          setPizza([data, ...pizza]);
-          setFormValues(initialFormValues);
-        })
-        .catch((error) => {
-          console.log(error);
-        })
-        .finally(() => setError(""));
-    }
+    postOrder(newOrder);
   };
+
+  useEffect(() => {
+    pizzaSchema.isValid(formValues).then((valid) => setDisabled(!valid));
+  }, [formValues]);
+
   return (
-    <div>
-      <h1>Pizza Form</h1>
-      <h2>{error}</h2>
-      <PizzaForm values={formValues} update={updateForm} submit={submitForm} />
-      {pizza.map((e) => {
-        <Pizza key={Date.now()} details={e} />;
-      })}
+    <div className="app-container">
+      <header>
+        <Route path="/">
+          <Link to="/" style={{ textDecoration: "none" }}>
+            <h1 className="h1">Lambda Eats</h1>
+          </Link>
+          <Link to="/" style={{ textDecoration: "none" }}>
+            <p>Home</p>
+          </Link>
+        </Route>
+      </header>
+
+      <Route exact path="/">
+        <Link to={`/pizza`}>
+          <button id="order-pizza">Order Now</button>
+        </Link>
+      </Route>
+
+      <Route path="/pizza">
+        <PizzaForm
+          disabled={disabled}
+          change={inputChange}
+          submit={formSubmit}
+          values={formValues}
+          errors={formErrors}
+        />
+      </Route>
+
+      {/* <Route path="/orders"> */}
+      <Orders orders={orders} />
+      {/* </Route> */}
+      {/**for some reason my routes for the orders tend to break once in a while, if you encounter the orders not showing up please refresh the server... I'm thinking that the api has a limit and it's blocking new request */}
+
+      {/* <img src='/Pizza.jpg'/> */}
+      {/* <img src="./img/Pizza.jpg" /> */}
+      {/* <Img /> */}
     </div>
   );
-}
+};
+export default App;
