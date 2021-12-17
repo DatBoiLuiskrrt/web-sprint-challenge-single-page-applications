@@ -5,7 +5,7 @@ import * as yup from "yup";
 import PizzaForm from "./components/PizzaForm";
 import pizzaSchema from "./components/PizzaSchema";
 import Orders from "./components/Orders";
-import Img from "./img/Pizza.jpg";
+
 const initialForm = {
   "name-input": "",
   "size-dropdown": null,
