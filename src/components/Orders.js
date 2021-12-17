@@ -7,9 +7,9 @@ export default function Orders(props) {
     return <p>No new orders</p>;
   }
 
-  return orders.map((order) => {
+  return orders.map((order, index) => {
     return (
-      <div className="order-container">
+      <div className="order-container" key="index">
         <h2>New Order</h2>
         <div className="order-wrapper">
           <p>Name: {order["name-input"]}</p>
